@@ -33,6 +33,9 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import { Choice } from '@/components/form-choice';
+import { LocationFields, LocationList } from '@/components/location-manager';
+import type { LocationKind } from '@/lib/domain';
 import { registerWorkOrderTools } from '@/lib/webmcp';
 import {
   statuses,
@@ -41,41 +44,8 @@ import {
   type WorkOrder,
   type Status,
 } from '@/lib/domain';
-const empty: Snapshot = { assets: [], workOrders: [] };
-type FormMode = 'asset' | 'work-order' | WorkOrder | null;
-function Choice({
-  name,
-  title,
-  items,
-  initial,
-}: {
-  name: string;
-  title: string;
-  items: { value: string; label: string }[];
-  initial?: string;
-}) {
-  return (
-    <label className="field" htmlFor={name}>
-      {title}
-      <Select
-        name={name}
-        items={items}
-        defaultValue={initial || items[0]?.value}
-      >
-        <SelectTrigger className="w-full" id={name}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {items.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </label>
-  );
-}
+const empty: Snapshot = { assets: [], workOrders: [], locations: [] };
+type FormMode = 'asset' | 'work-order' | 'location' | WorkOrder | null;
 export default function Home() {
   const [data, setData] = useState<Snapshot>(empty);
   const [ready, setReady] = useState(false);
@@ -86,6 +56,8 @@ export default function Home() {
   const [filter, setFilter] = useState('all');
   const [tab, setTab] = useState('work-orders');
   const [query, setQuery] = useState('');
+  const [locationKind, setLocationKind] = useState<LocationKind>('site');
+  const locations = data.locations ?? [];
   const loadGeneration = useRef(0);
   const [drafts, setDrafts] = useState<
     Record<
@@ -97,6 +69,21 @@ export default function Home() {
     signature: string;
     body: Record<string, unknown>;
   } | null>(null);
+  function openLocation() {
+    pending.current = null;
+    setError('');
+    setLocationKind('site');
+    setMode('location');
+  }
+  function openAsset() {
+    if (!locations.length) {
+      openLocation();
+      return;
+    }
+    pending.current = null;
+    setError('');
+    setMode('asset');
+  }
   const refresh = useCallback(async () => {
     const generation = ++loadGeneration.current;
     const response = await fetch('/api/snapshot', { cache: 'no-store' });
@@ -138,7 +125,7 @@ export default function Home() {
     try {
       const signature = JSON.stringify([mode, fields]);
       const candidate =
-        mode === 'asset'
+        mode === 'asset' || mode === 'location'
           ? { id: pending.current?.body.id || crypto.randomUUID(), ...fields }
           : mode === 'work-order'
             ? {
@@ -159,7 +146,11 @@ export default function Home() {
         pending.current = { signature, body: candidate };
       const body = pending.current.body;
       const response = await fetch(
-        mode === 'asset' ? '/api/assets' : '/api/work-orders',
+        mode === 'asset'
+          ? '/api/assets'
+          : mode === 'location'
+            ? '/api/locations'
+            : '/api/work-orders',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -306,6 +297,7 @@ export default function Home() {
             <TabsList variant="line">
               <TabsTrigger value="work-orders">Work orders</TabsTrigger>
               <TabsTrigger value="assets">Assets</TabsTrigger>
+              <TabsTrigger value="locations">Locations</TabsTrigger>
             </TabsList>
             <Button
               variant="ghost"
@@ -413,16 +405,21 @@ export default function Home() {
                     ? 'Try a different search or status.'
                     : data.assets.length
                       ? 'Create a work order to record what needs attention.'
-                      : 'Register your first asset, then create its first work order.'}
+                      : locations.length
+                        ? 'Register your first asset, then create its first work order.'
+                        : 'Add your first location, then register the equipment there.'}
                 </p>
                 {!data.assets.length && (
                   <Button
                     onClick={() => {
                       setError('');
-                      setMode('asset');
+                      openAsset();
                     }}
                   >
-                    <Plus /> Add your first asset
+                    <Plus />{' '}
+                    {locations.length
+                      ? 'Add your first asset'
+                      : 'Add your first location'}
                   </Button>
                 )}
               </div>
@@ -434,11 +431,11 @@ export default function Home() {
               <Button
                 onClick={() => {
                   setError('');
-                  setMode('asset');
+                  openAsset();
                 }}
                 disabled={!ready}
               >
-                <Plus /> Add asset
+                <Plus /> {locations.length ? 'Add asset' : 'Add location'}
               </Button>
             </div>
             {data.assets.length ? (
@@ -462,9 +459,17 @@ export default function Home() {
               </div>
             )}
           </TabsContent>
+          <TabsContent value="locations">
+            <LocationList
+              locations={locations}
+              assets={data.assets}
+              ready={ready}
+              onAdd={openLocation}
+            />
+          </TabsContent>
         </Tabs>
         <footer>
-          <span>QueSuite CMMS · Foundation 0.1</span>
+          <span>QueSuite CMMS · Pilot 0.2</span>
           <span>Online pilot · Changes require a connection</span>
         </footer>
       </main>
@@ -480,13 +485,15 @@ export default function Home() {
       >
         <DialogContent className="work-dialog">
           <DialogTitle>
-            {mode === 'asset'
-              ? 'Register an asset'
-              : mode === 'work-order'
-                ? 'New work order'
-                : mode
-                  ? action[mode.status]
-                  : ''}
+            {mode === 'location'
+              ? 'Add a location'
+              : mode === 'asset'
+                ? 'Register an asset'
+                : mode === 'work-order'
+                  ? 'New work order'
+                  : mode
+                    ? action[mode.status]
+                    : ''}
           </DialogTitle>
           <DialogDescription>
             {typeof mode === 'object' && mode
@@ -498,7 +505,13 @@ export default function Home() {
             className="work-form"
             key={typeof mode === 'string' ? mode : mode?.id}
           >
-            {mode === 'asset' ? (
+            {mode === 'location' ? (
+              <LocationFields
+                kind={locationKind}
+                onKindChange={setLocationKind}
+                locations={locations}
+              />
+            ) : mode === 'asset' ? (
               <>
                 <label className="field" htmlFor="tag">
                   Asset tag
@@ -520,16 +533,14 @@ export default function Home() {
                     placeholder="e.g. Cooling water pump"
                   />
                 </label>
-                <label className="field" htmlFor="location">
-                  Location
-                  <Input
-                    id="location"
-                    name="location"
-                    required
-                    maxLength={160}
-                    placeholder="e.g. Main plant / Utility room"
-                  />
-                </label>
+                <Choice
+                  name="locationId"
+                  title="Location"
+                  items={locations.map((location) => ({
+                    value: location.id,
+                    label: location.path,
+                  }))}
+                />
               </>
             ) : mode === 'work-order' ? (
               <>
@@ -627,14 +638,28 @@ export default function Home() {
                 {error}
               </p>
             )}
-            <Button type="submit" disabled={busy}>
+            <Button
+              type="submit"
+              disabled={
+                busy ||
+                (mode === 'location' &&
+                  locationKind !== 'site' &&
+                  !locations.some(
+                    (l) =>
+                      l.kind ===
+                      (locationKind === 'building' ? 'site' : 'building'),
+                  ))
+              }
+            >
               {busy
                 ? 'Saving…'
-                : mode === 'asset'
-                  ? 'Register asset'
-                  : mode === 'work-order'
-                    ? 'Create work order'
-                    : 'Confirm'}
+                : mode === 'location'
+                  ? 'Save location'
+                  : mode === 'asset'
+                    ? 'Register asset'
+                    : mode === 'work-order'
+                      ? 'Create work order'
+                      : 'Confirm'}
             </Button>
           </form>
         </DialogContent>

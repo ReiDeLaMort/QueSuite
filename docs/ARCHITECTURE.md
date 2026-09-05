@@ -17,18 +17,22 @@ UI modules do not import the database. Pure TypeScript rules do not import platf
 
 | Entity           | Fields and invariants                                                                                                                                                                             |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Asset            | UUID, organization ID, normalized tag unique within organization, name, location label, created time                                                                                              |
+| Location         | Company-scoped UUID, normalized name, kind (site/building/area), same-company parent, server-derived path; create-only in 0.2                                                                     |
+| Asset            | UUID, organization ID, normalized tag unique within organization, name, location label, optional structured location reference, created time                                                      |
+| Asset location   | One same-company location reference per asset; composite foreign keys; committed atomically with a new asset                                                                                      |
 | Work order       | UUID, organization ID, same-company asset reference, copied asset tag/service location, title, description, type, priority, status, assignee label, completion note, positive version, timestamps |
 | Work-order event | Organization + operation ID primary key; one event per order/version; command, original result, pilot actor, server timestamp                                                                     |
 
 Work orders preserve the service location when created. Future asset moves must not rewrite historical service locations.
+
+Sites have no parent; buildings belong to sites; work areas belong to buildings. Create-only parents and the strict kind hierarchy prevent cycles through the API. Normalized lowercase keys enforce unique sibling names and unique site names within a company. Names are at most 50 characters; the deepest path is at most 156 characters. A new asset stores the selected path as its label. Assets created before this feature retain their free-text label and return `locationId: null`. See ADR 006 for migration and retry decisions.
 
 Status flow: requested → assigned → in_progress → completed → closed.
 Assignment requires a name. Completion requires a nonblank result note. Skipping steps and changing closed records are rejected. Cancellation, reassignment, and reopening need explicit future commands and audit reasons.
 
 ## Planned entities
 
-Organization and membership (user/role/active state); hierarchical location (site/building/line/room); procedures and checklist answers; PM schedule; meter/reading; part/stock transaction; attachment metadata.
+Organization and membership (user/role/active state); procedures and checklist answers; PM schedule; meter/reading; part/stock transaction; attachment metadata.
 
 Locations must remain in the same company and cannot have cycles. An active assignee membership must belong to the work order's organization. Deactivate historical references instead of deleting them. Inventory and schedule models will be designed when those workflows enter scope.
 
@@ -39,6 +43,8 @@ Work-order commands use a client UUID and operation ID. An exact accepted retry 
 A mutation checks the organization and expected version, and refuses to run if the operation was already accepted. In the same D1 batch, an audit/result entry is inserted only for the matching operation marker. A failed comparison cannot produce an event. Audit SQL failure rolls back the mutation.
 
 The browser retains the same request identifiers when retrying an unchanged open form after a network failure. It does not persist that draft across refreshes yet.
+
+Location and asset creation use their UUID as request identity. An exact normalized retry returns the saved record and timestamp; conflicting payloads return 409. The legacy asset API remains available with a free-text label. Structured creation accepts a location UUID and derives the label on the server.
 
 ## Known boundaries
 

@@ -8,6 +8,41 @@ import {
   primaryKey,
 } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
+export const locations = sqliteTable(
+  'locations',
+  {
+    id: text('id').notNull(),
+    organizationId: text('organization_id').notNull(),
+    name: text('name').notNull(),
+    nameKey: text('name_key').notNull(),
+    kind: text('kind').notNull(),
+    parentId: text('parent_id'),
+    path: text('path').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.organizationId, t.id] }),
+    foreignKey({
+      columns: [t.organizationId, t.parentId],
+      foreignColumns: [t.organizationId, t.id],
+    }),
+    uniqueIndex('locations_root_name')
+      .on(t.organizationId, t.nameKey)
+      .where(sql`${t.parentId} IS NULL`),
+    uniqueIndex('locations_child_name')
+      .on(t.organizationId, t.parentId, t.nameKey)
+      .where(sql`${t.parentId} IS NOT NULL`),
+    check('location_kind', sql`${t.kind} IN ('site','building','area')`),
+    check(
+      'location_parent',
+      sql`(${t.kind} = 'site' AND ${t.parentId} IS NULL) OR (${t.kind} IN ('building','area') AND ${t.parentId} IS NOT NULL)`,
+    ),
+    check(
+      'location_not_self',
+      sql`${t.parentId} IS NULL OR ${t.parentId} <> ${t.id}`,
+    ),
+  ],
+);
 export const assets = sqliteTable(
   'assets',
   {
@@ -21,6 +56,26 @@ export const assets = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.organizationId, t.id] }),
     uniqueIndex('assets_org_tag').on(t.organizationId, t.tag),
+  ],
+);
+// An additive association preserves existing assets and their historical labels.
+export const assetLocations = sqliteTable(
+  'asset_locations',
+  {
+    organizationId: text('organization_id').notNull(),
+    assetId: text('asset_id').notNull(),
+    locationId: text('location_id').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.organizationId, t.assetId] }),
+    foreignKey({
+      columns: [t.organizationId, t.assetId],
+      foreignColumns: [assets.organizationId, assets.id],
+    }),
+    foreignKey({
+      columns: [t.organizationId, t.locationId],
+      foreignColumns: [locations.organizationId, locations.id],
+    }),
   ],
 );
 export const workOrders = sqliteTable(

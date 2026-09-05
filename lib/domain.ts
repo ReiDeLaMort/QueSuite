@@ -19,6 +19,18 @@ export interface Asset {
   tag: string;
   name: string;
   location: string;
+  locationId: string | null;
+  createdAt: string;
+}
+export const locationKinds = ['site', 'building', 'area'] as const;
+export type LocationKind = (typeof locationKinds)[number];
+export interface Location {
+  id: string;
+  organizationId: string;
+  name: string;
+  kind: LocationKind;
+  parentId: string | null;
+  path: string;
   createdAt: string;
 }
 export interface WorkOrder {
@@ -39,6 +51,7 @@ export interface WorkOrder {
   updatedAt: string;
 }
 export interface Snapshot {
+  locations: Location[];
   assets: Asset[];
   workOrders: WorkOrder[];
 }

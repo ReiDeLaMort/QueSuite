@@ -6,11 +6,16 @@ import {
   statuses,
   validateTransition,
   type Asset,
+  type Location,
   type WorkOrder,
   type Snapshot,
 } from '../domain.ts';
-// Owner-only pilot. Replace this context with a verified membership before shared access.
-const organizationId = 'quesuite-pilot';
+import { organizationId } from './context.ts';
+import { findLocation, locationColumns } from './locations.ts';
+const assetColumns =
+  'a.id, a.organization_id AS organizationId, a.tag, a.name, a.location, a.created_at AS createdAt, al.location_id AS locationId';
+const assetJoin =
+  ' FROM assets a LEFT JOIN asset_locations al ON al.organization_id = a.organization_id AND al.asset_id = a.id';
 const columns =
   'id, organization_id AS organizationId, asset_id AS assetId, asset_tag AS assetTag, service_location AS serviceLocation, title, description, priority, type, status, assignee, completion_note AS completionNote, version, created_at AS createdAt, updated_at AS updatedAt';
 const resultJson =
@@ -28,7 +33,10 @@ export async function snapshot(db: D1Database): Promise<Snapshot> {
   const result = await db.batch([
     db
       .prepare(
-        'SELECT id, organization_id AS organizationId, tag, name, location, created_at AS createdAt FROM assets WHERE organization_id = ? ORDER BY tag',
+        'SELECT ' +
+          assetColumns +
+          assetJoin +
+          ' WHERE a.organization_id = ? ORDER BY a.tag',
       )
       .bind(organizationId),
     db
@@ -38,28 +46,69 @@ export async function snapshot(db: D1Database): Promise<Snapshot> {
           ' FROM work_orders WHERE organization_id = ? ORDER BY updated_at DESC, id',
       )
       .bind(organizationId),
+    db
+      .prepare(
+        'SELECT ' +
+          locationColumns +
+          ' FROM locations WHERE organization_id = ? ORDER BY path COLLATE NOCASE, id',
+      )
+      .bind(organizationId),
   ]);
   return {
     assets: result[0].results as unknown as Asset[],
     workOrders: result[1].results as unknown as WorkOrder[],
+    locations: result[2].results as unknown as Location[],
   };
 }
 export async function addAsset(
   db: D1Database,
   body: Record<string, unknown>,
 ): Promise<Asset> {
+  const locationId = body.locationId == null ? null : uuid(body.locationId);
+  if (locationId && body.location !== undefined)
+    throw new DomainError(
+      'Choose a structured location or supply a legacy label, not both.',
+    );
+  const selected = locationId ? await findLocation(db, locationId) : null;
+  if (locationId && !selected)
+    throw new DomainError('Selected location not found.', 404);
   const asset: Asset = {
     id: uuid(body.id),
     organizationId,
     tag: field(body.tag, 'Asset tag', 40).toUpperCase(),
     name: field(body.name, 'Asset name', 120),
-    location: field(body.location, 'Location', 160),
+    location: selected ? selected.path : field(body.location, 'Location', 160),
+    locationId,
     createdAt: new Date().toISOString(),
   };
-
-  await db
+  const matches = (saved: Asset) =>
+    saved.tag === asset.tag &&
+    saved.name === asset.name &&
+    saved.location === asset.location &&
+    saved.locationId === asset.locationId;
+  const find = () =>
+    db
+      .prepare(
+        'SELECT ' +
+          assetColumns +
+          assetJoin +
+          ' WHERE a.organization_id = ? AND a.id = ?',
+      )
+      .bind(organizationId, asset.id)
+      .first<Asset>();
+  const existing = await find();
+  if (existing) {
+    if (matches(existing)) return existing;
+    throw new DomainError(
+      'This asset request ID already describes different data.',
+      409,
+    );
+  }
+  // A plain INSERT ensures a conflicting retry cannot attach a location to an
+  // existing asset. D1 rolls the whole batch back if either insertion fails.
+  const insert = db
     .prepare(
-      'INSERT INTO assets (id,organization_id,tag,name,location,created_at) VALUES (?,?,?,?,?,?) ON CONFLICT DO NOTHING',
+      'INSERT INTO assets (id,organization_id,tag,name,location,created_at) VALUES (?,?,?,?,?,?)',
     )
     .bind(
       asset.id,
@@ -68,26 +117,37 @@ export async function addAsset(
       asset.name,
       asset.location,
       asset.createdAt,
-    )
-    .run();
-  const saved = await db
-    .prepare(
-      'SELECT id, organization_id AS organizationId, tag, name, location, created_at AS createdAt FROM assets WHERE organization_id = ? AND id = ?',
-    )
-    .bind(organizationId, asset.id)
-    .first<Asset>();
-  if (
-    !saved ||
-    saved.tag !== asset.tag ||
-    saved.name !== asset.name ||
-    saved.location !== asset.location
-  )
-    throw new DomainError(
-      'This asset tag or request ID already exists. Refresh and review the asset.',
-      409,
     );
-  return saved;
+  try {
+    const statements = [insert];
+    if (locationId)
+      statements.push(
+        db
+          .prepare(
+            'INSERT INTO asset_locations (organization_id,asset_id,location_id) VALUES (?,?,?)',
+          )
+          .bind(organizationId, asset.id, locationId),
+      );
+    await db.batch(statements);
+  } catch (error) {
+    const saved = await find();
+    if (saved && matches(saved)) return saved;
+    const duplicate =
+      saved ||
+      (await db
+        .prepare('SELECT id FROM assets WHERE organization_id = ? AND tag = ?')
+        .bind(organizationId, asset.tag)
+        .first());
+    if (duplicate)
+      throw new DomainError(
+        'This asset tag or request ID already exists. Refresh and review the asset.',
+        409,
+      );
+    throw error;
+  }
+  return asset;
 }
+
 export async function command(
   db: D1Database,
   body: Record<string, unknown>,

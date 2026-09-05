@@ -1,6 +1,6 @@
 # QueSuite CMMS — first pilot PRD
 
-Status: initial working baseline, September 5, 2026.
+Status: structured locations milestone 0.2, September 5, 2026.
 Owner: Manuel / Que Enterprise.
 Audience: our maintenance team first; a product for multiple companies later.
 
@@ -10,7 +10,7 @@ Equipment issues and maintenance progress need one reliable place to be recorded
 
 ## First complete workflow
 
-Register an asset with a unique tag and location label. Create a work order for it. Assign a technician by name. Start work. Record what was done in a completion note. Review and close the work order. Find the record again after a reload.
+Create a site, building, and work area. Register an asset with a unique tag and select its location. Create a work order for it. Assign a technician by name. Start work. Record what was done in a completion note. Review and close the work order. Find the record again after a reload.
 
 Completion records a technician's reported result; closure records the operator's review. This separation preserves a useful acceptance checkpoint.
 
@@ -22,7 +22,9 @@ The owner operates this pilot during a team demonstration. Names are provisional
 
 ## Next team-pilot requirements
 
-Individual sign-in and organization memberships; technician/coordinator permissions; hierarchical locations; offline cached work orders and a durable command outbox; explicit conflict review; recovery and device testing. Complete these before relying on disconnected field use or granting independent team access.
+Milestone 0.2 adds a three-level location hierarchy and asset location selection. Names are unique within each parent. Existing asset labels and historical work-order service locations remain intact. Location editing, movement, deletion, and conversion of legacy labels are outside this increment.
+
+Individual sign-in and organization memberships; technician/coordinator permissions; offline cached work orders and a durable command outbox; explicit conflict review; recovery and device testing remain required. Complete these before relying on disconnected field use or granting independent team access.
 
 ## Not in v1
 

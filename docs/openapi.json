@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "QueSuite CMMS pilot API",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Online owner-led pilot. Hosted routes require private platform access; application memberships are not implemented. Local development has no login and must remain local. Organization and actor are server-selected. Keep stable operation IDs and asset UUIDs on retries. Whitespace is trimmed and asset tags uppercase. A 409 returns an error; GET /api/snapshot retrieves current records."
   },
   "servers": [
@@ -83,7 +83,7 @@
             }
           },
           "404": {
-            "description": "Work order not found",
+            "description": "Selected location not found in the pilot company",
             "content": {
               "application/json": {
                 "schema": {
@@ -252,6 +252,113 @@
         },
         "description": "Create at requested/version 1. Transitions accept only the next lifecycle status and expectedVersion. Assignment requires assignee; completion requires completionNote. Mutation, audit entry, and result commit atomically. Closed work orders are immutable. Unknown fields cannot change server ownership or actor."
       }
+    },
+    "/api/locations": {
+      "post": {
+        "operationId": "createLocation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success or original accepted result replayed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Location"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-origin write rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Parent or selected location not found in this organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Location name already exists within this parent, or request ID was reused with different data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request exceeds 16000 characters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Use application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Field or lifecycle validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -277,9 +384,36 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 160
+          },
+          "locationId": {
+            "type": ["string", "null"],
+            "format": "uuid"
           }
         },
-        "required": ["id", "tag", "name", "location"]
+        "required": ["id", "tag", "name"],
+        "oneOf": [
+          {
+            "required": ["locationId"],
+            "not": {
+              "required": ["location"]
+            },
+            "properties": {
+              "locationId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "required": ["location"],
+            "properties": {
+              "locationId": {
+                "type": "null"
+              }
+            }
+          }
+        ],
+        "description": "Supply a structured locationId OR the legacy free-text location. Structured requests derive the path on the server and save the asset and association atomically."
       },
       "Asset": {
         "type": "object",
@@ -309,6 +443,10 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "locationId": {
+            "type": ["string", "null"],
+            "format": "uuid"
           }
         },
         "required": [
@@ -317,7 +455,8 @@
           "tag",
           "name",
           "location",
-          "createdAt"
+          "createdAt",
+          "locationId"
         ]
       },
       "WorkOrder": {
@@ -423,9 +562,15 @@
             "items": {
               "$ref": "#/components/schemas/WorkOrder"
             }
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Location"
+            }
           }
         },
-        "required": ["assets", "workOrders"]
+        "required": ["assets", "workOrders", "locations"]
       },
       "Error": {
         "type": "object",
@@ -535,6 +680,70 @@
             "transition": "#/components/schemas/TransitionWorkOrder"
           }
         }
+      },
+      "LocationCreate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["site", "building", "area"]
+          },
+          "parentId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          }
+        },
+        "required": ["id", "name", "kind"],
+        "description": "Create immutable site → building → area hierarchy. Sites have no parent; buildings require a site; areas require a building. Names are trimmed, normalized and unique within their parent, case-insensitively. An identical UUID retry returns the original record."
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["site", "building", "area"]
+          },
+          "parentId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 156
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "name",
+          "kind",
+          "parentId",
+          "path",
+          "createdAt"
+        ]
       }
     }
   }

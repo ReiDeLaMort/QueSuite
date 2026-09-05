@@ -4,7 +4,9 @@ Record date, observer, device, scenario, outcome, and friction. Do not enter sec
 
 ## Walkthrough
 
-- Register an asset with a unique tag and meaningful location.
+- Add a site, a building inside it, and a work area inside that building.
+- Register an asset with a unique tag and select its location; confirm the full path appears on the asset and its new work order.
+- Confirm any pre-existing asset labels and work-order service locations still read as before.
 - Create a work order with a clear symptom, priority, and work type.
 - Assign it by technician name, start, complete with an outcome note, then review and close.
 - Refresh and confirm the record and completion note remain.
@@ -13,8 +15,8 @@ Record date, observer, device, scenario, outcome, and friction. Do not enter sec
 
 ## Technical acceptance
 
-- Automated repository tests: persistence, lifecycle validation, original-result replay, stale updates, foreign-organization references, transactional rollback, and competing operation IDs.
-- Live HTTP test: create, list, full lifecycle, and simultaneous updates through the actual local D1 runtime.
+- Automated repository tests: persistence, lifecycle validation, original-result replay, stale updates, foreign-organization references, transactional rollback, competing operation IDs, location hierarchy/uniqueness, and upgrades with existing history.
+- Live HTTP test: location hierarchy, structured and legacy asset creation, list, full lifecycle, and simultaneous updates through the actual local D1 runtime.
 - Browser interaction, keyboard/accessibility, 200% text zoom, Android-width layout, and macOS/Android hardware are manual checks not yet completed.
 - Private hosted page and direct API routes must reject unauthenticated requests.
 - Offline recovery and role isolation are future release gates, not capabilities of this pilot.

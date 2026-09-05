@@ -4,13 +4,15 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFileSync, readdirSync } from 'node:fs';
 import { command, addAsset, snapshot } from '../lib/server/repository.ts';
 import { DomainError } from '../lib/domain.ts';
+import { addLocation } from '../lib/server/locations.ts';
 
-function database() {
+function database(migrationCount = Infinity) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec('PRAGMA foreign_keys = ON');
   for (const file of readdirSync(new URL('../drizzle/', import.meta.url))
     .filter((f) => f.endsWith('.sql'))
-    .sort())
+    .sort()
+    .slice(0, migrationCount))
     sqlite.exec(
       readFileSync(new URL('../drizzle/' + file, import.meta.url), 'utf8'),
     );
@@ -25,7 +27,8 @@ function database() {
       return this;
     }
     async first() {
-      return sqlite.prepare(this.sql).get(...this.args) ?? null;
+      const row = sqlite.prepare(this.sql).get(...this.args);
+      return row ? { ...row } : null;
     }
     async run() {
       const result = sqlite.prepare(this.sql).run(...this.args);
@@ -38,7 +41,10 @@ function database() {
     async all() {
       return {
         success: true,
-        results: sqlite.prepare(this.sql).all(...this.args),
+        results: sqlite
+          .prepare(this.sql)
+          .all(...this.args)
+          .map((row) => ({ ...row })),
       };
     }
   }
@@ -288,6 +294,307 @@ await test('an idempotency key accepted between read and mutation prevents a sec
     );
     assert.equal((await snapshot(db)).workOrders.length, 1);
     assert.equal((await snapshot(db)).workOrders[0].id, original.id);
+  } finally {
+    sqlite.close();
+  }
+});
+
+const locationRequest = (
+  name: string,
+  kind: string,
+  parentId: string | null = null,
+) => ({
+  id: crypto.randomUUID(),
+  name,
+  kind,
+  parentId,
+});
+async function hierarchy(db: D1Database) {
+  const site = await addLocation(db, locationRequest('Main plant', 'site'));
+  const building = await addLocation(
+    db,
+    locationRequest('Production', 'building', site.id),
+  );
+  const area = await addLocation(
+    db,
+    locationRequest('Assembly line 1', 'area', building.id),
+  );
+  return { site, building, area };
+}
+await test('structured hierarchy derives asset and work-order locations on the server', async () => {
+  const { db, sqlite } = database();
+  try {
+    const { area } = await hierarchy(db);
+    const request = {
+      id: crypto.randomUUID(),
+      tag: 'A-1',
+      name: 'Press',
+      locationId: area.id,
+    };
+    const asset = await addAsset(db, request);
+    assert.equal(asset.location, 'Main plant / Production / Assembly line 1');
+    assert.equal(asset.locationId, area.id);
+    assert.deepEqual(await addAsset(db, request), asset);
+    const order = await command(db, {
+      kind: 'create',
+      operationId: crypto.randomUUID(),
+      id: crypto.randomUUID(),
+      assetId: asset.id,
+      title: 'Inspect press',
+      priority: 'normal',
+      type: 'inspection',
+    });
+    assert.equal(order.serviceLocation, asset.location);
+    assert.equal((await snapshot(db)).locations.length, 3);
+    assert.equal(
+      sqlite.prepare('SELECT count(*) AS n FROM asset_locations').get()!.n,
+      1,
+    );
+  } finally {
+    sqlite.close();
+  }
+});
+await test('location retries preserve original timestamps and reject changed identity', async () => {
+  const { db, sqlite } = database();
+  try {
+    const request = locationRequest('  Main   plant  ', 'site');
+    const original = await addLocation(db, request);
+    assert.equal(original.name, 'Main plant');
+    assert.deepEqual(await addLocation(db, request), original);
+    await assert.rejects(
+      addLocation(db, { ...request, name: 'Different site' }),
+      (e: unknown) => e instanceof DomainError && e.status === 409,
+    );
+    assert.equal((await snapshot(db)).locations.length, 1);
+  } finally {
+    sqlite.close();
+  }
+});
+await test('case-insensitive root and sibling names are unique, distinct parents may reuse names', async () => {
+  const { db, sqlite } = database();
+  try {
+    const { site, building } = await hierarchy(db);
+    await assert.rejects(
+      addLocation(db, locationRequest('MAIN PLANT', 'site')),
+      DomainError,
+    );
+    await assert.rejects(
+      addLocation(db, locationRequest('production', 'building', site.id)),
+      DomainError,
+    );
+    const other = await addLocation(
+      db,
+      locationRequest('Second plant', 'site'),
+    );
+    const reused = await addLocation(
+      db,
+      locationRequest(building.name, 'building', other.id),
+    );
+    assert.notEqual(reused.id, building.id);
+    assert.equal((await snapshot(db)).locations.length, 5);
+  } finally {
+    sqlite.close();
+  }
+});
+await test('invalid parent kinds, missing parents, self-parenting, and ambiguous names are rejected', async () => {
+  const { db, sqlite } = database();
+  try {
+    const { site, area } = await hierarchy(db);
+    const self = crypto.randomUUID();
+    for (const request of [
+      locationRequest('Missing parent', 'building'),
+      locationRequest('Nested site', 'site', site.id),
+      locationRequest('Skipped building', 'area', site.id),
+      locationRequest('Too deep', 'building', area.id),
+      locationRequest('Missing', 'building', crypto.randomUUID()),
+      { id: self, name: 'Self', kind: 'building', parentId: self },
+      locationRequest('Plant / Building', 'site'),
+      locationRequest('x'.repeat(51), 'site'),
+    ])
+      await assert.rejects(addLocation(db, request), DomainError);
+    assert.equal((await snapshot(db)).locations.length, 3);
+  } finally {
+    sqlite.close();
+  }
+});
+await test('company boundaries apply to location parents, asset assignments, reads, and SQL foreign keys', async () => {
+  const { db, sqlite, asset } = await setup();
+  try {
+    const foreign = crypto.randomUUID();
+    sqlite
+      .prepare(
+        'INSERT INTO locations (id,organization_id,name,name_key,kind,parent_id,path,created_at) VALUES (?,?,?,?,?,?,?,?)',
+      )
+      .run(
+        foreign,
+        'another-company',
+        'Other plant',
+        'other plant',
+        'site',
+        null,
+        'Other plant',
+        new Date().toISOString(),
+      );
+    await assert.rejects(
+      addLocation(db, locationRequest('Foreign building', 'building', foreign)),
+      DomainError,
+    );
+    await assert.rejects(
+      addAsset(db, {
+        id: crypto.randomUUID(),
+        tag: 'X-1',
+        name: 'Other equipment',
+        locationId: foreign,
+      }),
+      DomainError,
+    );
+    assert.throws(() =>
+      sqlite
+        .prepare('INSERT INTO asset_locations VALUES (?,?,?)')
+        .run('quesuite-pilot', asset.id, foreign),
+    );
+    assert.throws(() =>
+      sqlite
+        .prepare(
+          'INSERT INTO locations (id,organization_id,name,name_key,kind,parent_id,path,created_at) VALUES (?,?,?,?,?,?,?,?)',
+        )
+        .run(
+          crypto.randomUUID(),
+          'quesuite-pilot',
+          'Cross-company',
+          'cross-company',
+          'building',
+          foreign,
+          'Other plant / Cross-company',
+          new Date().toISOString(),
+        ),
+    );
+    assert.equal((await snapshot(db)).locations.length, 0);
+    assert.equal((await snapshot(db)).assets.length, 1);
+  } finally {
+    sqlite.close();
+  }
+});
+await test('failed location association rolls back a newly registered asset', async () => {
+  const { db, sqlite } = database();
+  try {
+    const { area } = await hierarchy(db);
+    sqlite.exec(
+      "CREATE TRIGGER fail_assignment BEFORE INSERT ON asset_locations BEGIN SELECT RAISE(ABORT,'simulated association failure'); END",
+    );
+    await assert.rejects(
+      addAsset(db, {
+        id: crypto.randomUUID(),
+        tag: 'ROLLBACK-1',
+        name: 'Press',
+        locationId: area.id,
+      }),
+    );
+    assert.equal((await snapshot(db)).assets.length, 0);
+    assert.equal(
+      sqlite.prepare('SELECT count(*) AS n FROM asset_locations').get()!.n,
+      0,
+    );
+  } finally {
+    sqlite.close();
+  }
+});
+await test('conflicting retry cannot attach a location to an existing legacy asset', async () => {
+  const { db, sqlite } = database();
+  try {
+    const { area } = await hierarchy(db);
+    const request = {
+      id: crypto.randomUUID(),
+      tag: 'LEGACY-1',
+      name: 'Press',
+      location: area.path,
+    };
+    const asset = await addAsset(db, request);
+    // Same display label still cannot silently change the structured association.
+    await assert.rejects(
+      addAsset(db, {
+        id: asset.id,
+        tag: asset.tag,
+        name: asset.name,
+        locationId: area.id,
+      }),
+      DomainError,
+    );
+    assert.equal((await snapshot(db)).assets[0].locationId, null);
+    assert.equal(
+      sqlite.prepare('SELECT count(*) AS n FROM asset_locations').get()!.n,
+      0,
+    );
+  } finally {
+    sqlite.close();
+  }
+});
+await test('additive migration preserves populated assets, work orders, audit JSON, and replay results', async () => {
+  const { db, sqlite } = database(1);
+  try {
+    const assetId = crypto.randomUUID();
+    sqlite
+      .prepare('INSERT INTO assets VALUES (?,?,?,?,?,?)')
+      .run(
+        assetId,
+        'quesuite-pilot',
+        'OLD-1',
+        'Legacy pump',
+        'Old site / Pump room',
+        new Date().toISOString(),
+      );
+    const create = {
+      kind: 'create',
+      operationId: crypto.randomUUID(),
+      id: crypto.randomUUID(),
+      assetId,
+      title: 'Legacy inspection',
+      priority: 'normal',
+      type: 'inspection',
+    };
+    const original = await command(db, create);
+    const before = sqlite.prepare('SELECT * FROM work_order_events').all();
+    for (const file of readdirSync(new URL('../drizzle/', import.meta.url))
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+      .slice(1))
+      sqlite.exec(
+        readFileSync(new URL('../drizzle/' + file, import.meta.url), 'utf8'),
+      );
+    const upgraded = await snapshot(db);
+    assert.equal(upgraded.assets[0].location, 'Old site / Pump room');
+    assert.equal(upgraded.assets[0].locationId, null);
+    assert.deepEqual(upgraded.workOrders, [original]);
+    assert.deepEqual(
+      sqlite.prepare('SELECT * FROM work_order_events').all(),
+      before,
+    );
+    assert.deepEqual(await command(db, create), original);
+    assert.deepEqual(upgraded.locations, []);
+    assert.equal(sqlite.prepare('PRAGMA foreign_key_check').all().length, 0);
+  } finally {
+    sqlite.close();
+  }
+});
+await test('maximum supported hierarchy fits the existing location label limit', async () => {
+  const { db, sqlite } = database();
+  try {
+    const site = await addLocation(db, locationRequest('S'.repeat(50), 'site'));
+    const building = await addLocation(
+      db,
+      locationRequest('B'.repeat(50), 'building', site.id),
+    );
+    const area = await addLocation(
+      db,
+      locationRequest('A'.repeat(50), 'area', building.id),
+    );
+    const asset = await addAsset(db, {
+      id: crypto.randomUUID(),
+      tag: 'MAX-1',
+      name: 'Press',
+      locationId: area.id,
+    });
+    assert.equal(asset.location.length, 156);
   } finally {
     sqlite.close();
   }
