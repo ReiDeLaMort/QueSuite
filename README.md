@@ -9,6 +9,8 @@ Use this repository for work in Visual Studio, Codex, Claude, and other editors.
 
 Individual accounts, roles, installation as a PWA, and offline synchronization are not implemented in this milestone. Assignee names are display labels, not authenticated identities. Hosted access remains private to the owner; this is a demonstration for the team, not a shared team deployment.
 
+The workspace is interlinked: summary counts open filtered lists; asset, location, and work-order names open details; breadcrumbs connect locations; and related records link to one another. Start a work order from an asset or register equipment from a location to preselect that record. The URL records your view and filters, so browser Back, reload, bookmarks, and opening a link in another tab preserve that context within the same workspace.
+
 ## Start on this computer
 
 Open this folder with Microsoft Visual Studio using **File → Open → Folder**. VS Code also works. No C# solution is required for this TypeScript project.

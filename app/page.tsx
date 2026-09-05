@@ -9,17 +9,26 @@ import {
 import {
   Wrench,
   Plus,
-  ArrowRight,
   RefreshCw,
   ClipboardList,
   Box,
   CheckCircle2,
 } from 'lucide-react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { RecordDetails } from '@/components/record-details';
+import {
+  AssetCards,
+  WorkOrderCards,
+  orderActions,
+} from '@/components/record-links';
+import { navigate, useWorkspaceRoute } from '@/components/workspace-route';
+import {
+  locationScope,
+  routeHref,
+  type WorkspaceRoute,
+} from '@/lib/navigation';
 import {
   Dialog,
   DialogContent,
@@ -35,15 +44,9 @@ import {
 } from '@/components/ui/select';
 import { Choice } from '@/components/form-choice';
 import { LocationFields, LocationList } from '@/components/location-manager';
-import type { LocationKind } from '@/lib/domain';
+import type { Location, LocationKind } from '@/lib/domain';
 import { registerWorkOrderTools } from '@/lib/webmcp';
-import {
-  statuses,
-  labels,
-  type Snapshot,
-  type WorkOrder,
-  type Status,
-} from '@/lib/domain';
+import { statuses, labels, type Snapshot, type WorkOrder } from '@/lib/domain';
 const empty: Snapshot = { assets: [], workOrders: [], locations: [] };
 type FormMode = 'asset' | 'work-order' | 'location' | WorkOrder | null;
 export default function Home() {
@@ -53,9 +56,17 @@ export default function Home() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<FormMode>(null);
-  const [filter, setFilter] = useState('all');
-  const [tab, setTab] = useState('work-orders');
-  const [query, setQuery] = useState('');
+  const route = useWorkspaceRoute();
+  const filter = route.status || 'all';
+  const query = route.query || '';
+  const tab = route.section;
+  const [formDefaults, setFormDefaults] = useState<{
+    assetId?: string;
+    locationId?: string;
+    parentId?: string;
+  }>({});
+  const contentRef = useRef<HTMLDivElement>(null);
+  const previousView = useRef('work-orders/');
   const [locationKind, setLocationKind] = useState<LocationKind>('site');
   const locations = data.locations ?? [];
   const loadGeneration = useRef(0);
@@ -69,20 +80,39 @@ export default function Home() {
     signature: string;
     body: Record<string, unknown>;
   } | null>(null);
-  function openLocation() {
+  function openLocation(parent?: Location) {
     pending.current = null;
     setError('');
-    setLocationKind('site');
+    setFormDefaults({ parentId: parent?.id });
+    setLocationKind(
+      parent?.kind === 'site'
+        ? 'building'
+        : parent?.kind === 'building'
+          ? 'area'
+          : 'site',
+    );
     setMode('location');
   }
-  function openAsset() {
+  function openAsset(locationId?: string) {
     if (!locations.length) {
       openLocation();
       return;
     }
     pending.current = null;
     setError('');
+    setFormDefaults({ locationId });
     setMode('asset');
+  }
+  function openWorkOrder(assetId?: string) {
+    pending.current = null;
+    setError('');
+    setFormDefaults({ assetId });
+    setMode('work-order');
+  }
+  function openTransition(order: WorkOrder) {
+    pending.current = null;
+    setError('');
+    setMode(order);
   }
   const refresh = useCallback(async () => {
     const generation = ++loadGeneration.current;
@@ -105,12 +135,21 @@ export default function Home() {
   useEffect(
     () =>
       registerWorkOrderTools((query, status) => {
-        setQuery(query);
-        setFilter(status);
-        setTab('work-orders');
+        navigate({
+          section: 'work-orders',
+          query,
+          status: status as WorkspaceRoute['status'],
+        });
       }),
     [],
   );
+  useEffect(() => {
+    const key = route.section + '/' + (route.id || '');
+    if (ready && previousView.current !== key) {
+      contentRef.current?.focus();
+      previousView.current = key;
+    }
+  }, [route.section, route.id, ready]);
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const fields = Object.fromEntries(new FormData(event.currentTarget));
@@ -157,7 +196,7 @@ export default function Home() {
           body: JSON.stringify(body),
         },
       );
-      const result = (await response.json()) as { error?: string };
+      const result = (await response.json()) as { error?: string; id?: string };
       if (!response.ok) {
         if (response.status === 409) await refresh();
         throw new Error(result.error || 'The change could not be saved.');
@@ -172,6 +211,16 @@ export default function Home() {
       setMode(null);
       setNotice('Saved.');
       await refresh();
+      if (result.id && typeof mode === 'string')
+        navigate({
+          section:
+            mode === 'asset'
+              ? 'assets'
+              : mode === 'location'
+                ? 'locations'
+                : 'work-orders',
+          id: result.id,
+        });
     } catch (e) {
       setError(
         e instanceof Error
@@ -184,12 +233,34 @@ export default function Home() {
   }
   const visible = data.workOrders.filter(
     (w) =>
-      (filter === 'all' || w.status === filter) &&
+      (filter === 'all' ||
+        (filter === 'open'
+          ? !['completed', 'closed'].includes(w.status)
+          : w.status === filter)) &&
+      (!route.asset || w.assetId === route.asset) &&
       [w.title, w.assetTag, w.assignee || '']
         .join(' ')
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
+  const selectedAsset = data.assets.find((asset) => asset.id === route.asset);
+  const unavailableAsset = Boolean(
+    (route.asset && !selectedAsset) ||
+    (tab === 'assets' &&
+      route.id &&
+      !data.assets.some((asset) => asset.id === route.id)),
+  );
+  const selectedLocation = locations.find(
+    (location) => location.id === route.location,
+  );
+  const scope = route.location
+    ? locationScope(locations, route.location)
+    : null;
+  const visibleAssets = scope
+    ? data.assets.filter(
+        (asset) => asset.locationId && scope.has(asset.locationId),
+      )
+    : data.assets;
   const active = data.workOrders.filter(
     (w) => !['completed', 'closed'].includes(w.status),
   ).length;
@@ -197,24 +268,17 @@ export default function Home() {
     typeof mode === 'object' && mode
       ? statuses[statuses.indexOf(mode.status) + 1]
       : undefined;
-  const action: Record<Status, string> = {
-    requested: 'Assign work',
-    assigned: 'Start work',
-    in_progress: 'Complete work',
-    completed: 'Close work order',
-    closed: 'Closed',
-  };
   return (
     <div className="app-shell">
       <header className="app-header">
-        <Link href="/" className="brand">
+        <a href={routeHref({ section: 'work-orders' })} className="brand">
           <span className="brand-icon">
             <Wrench size={23} />
           </span>
           <span>
             QueSuite <small>CMMS</small>
           </span>
-        </Link>
+        </a>
         <span className="pilot-label">WORKSPACE / PILOT</span>
       </header>
       <main className="workspace">
@@ -227,22 +291,26 @@ export default function Home() {
             </p>
           </div>
           <Button
-            disabled={!ready || !data.assets.length}
-            onClick={() => {
-              setError('');
-              setMode('work-order');
-            }}
+            disabled={!ready || !data.assets.length || unavailableAsset}
+            onClick={() =>
+              openWorkOrder(
+                tab === 'assets' && route.id
+                  ? data.assets.find((asset) => asset.id === route.id)?.id
+                  : selectedAsset?.id,
+              )
+            }
           >
             <Plus /> New work order
           </Button>
         </div>
         <div className="metrics">
-          <div>
+          <a href={routeHref({ section: 'work-orders', status: 'open' })}>
             <span>Open work orders</span>
             <strong>{ready ? active.toString().padStart(2, '0') : '—'}</strong>
             <ClipboardList />
-          </div>
-          <div>
+            <span className="metric-hint">View open work →</span>
+          </a>
+          <a href={routeHref({ section: 'work-orders', status: 'completed' })}>
             <span>Awaiting closure</span>
             <strong>
               {ready
@@ -253,14 +321,16 @@ export default function Home() {
                 : '—'}
             </strong>
             <CheckCircle2 />
-          </div>
-          <div>
+            <span className="metric-hint">Review completed work →</span>
+          </a>
+          <a href={routeHref({ section: 'assets' })}>
             <span>Registered assets</span>
             <strong>
               {ready ? data.assets.length.toString().padStart(2, '0') : '—'}
             </strong>
             <Box />
-          </div>
+            <span className="metric-hint">Explore equipment →</span>
+          </a>
         </div>
         <div aria-live="polite">
           {notice && <p className="notice">{notice}</p>}
@@ -292,182 +362,256 @@ export default function Home() {
             </Button>
           </details>
         ))}
-        <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
-          <div className="section-bar">
-            <TabsList variant="line">
-              <TabsTrigger value="work-orders">Work orders</TabsTrigger>
-              <TabsTrigger value="assets">Assets</TabsTrigger>
-              <TabsTrigger value="locations">Locations</TabsTrigger>
-            </TabsList>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setError('');
-                refresh().catch((e) => setError(String(e.message)));
-              }}
-            >
-              <RefreshCw /> Refresh
-            </Button>
-          </div>
-          <TabsContent value="work-orders">
-            <div className="toolbar">
-              <Input
-                aria-label="Search work orders"
-                placeholder="Search title, asset, or assignee…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              <Select
-                value={filter}
-                onValueChange={(v) => setFilter(String(v))}
-                items={[
-                  { value: 'all', label: 'All statuses' },
-                  ...statuses.map((value) => ({ value, label: labels[value] })),
-                ]}
-              >
-                <SelectTrigger aria-label="Filter by status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  {statuses.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {labels[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <div className="section-bar">
+          <nav className="workspace-nav" aria-label="Workspace">
+            {(['work-orders', 'assets', 'locations'] as const).map(
+              (section) => (
+                <a
+                  key={section}
+                  href={routeHref({ section })}
+                  aria-current={tab === section ? 'page' : undefined}
+                >
+                  {
+                    {
+                      'work-orders': 'Work orders',
+                      assets: 'Assets',
+                      locations: 'Locations',
+                    }[section]
+                  }
+                </a>
+              ),
+            )}
+          </nav>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setError('');
+              refresh().catch((e) => setError(String(e.message)));
+            }}
+          >
+            <RefreshCw />
+            Refresh
+          </Button>
+        </div>
+        <div
+          ref={contentRef}
+          tabIndex={-1}
+          className="workspace-content"
+          aria-label={
+            {
+              'work-orders': 'Work orders',
+              assets: 'Assets',
+              locations: 'Locations',
+            }[tab]
+          }
+        >
+          {!ready ? (
+            <div className="empty-state">
+              <ClipboardList />
+              <h2>
+                {error
+                  ? 'Your workspace is unavailable'
+                  : 'Loading your workspace…'}
+              </h2>
+              <p>Use Refresh to try again.</p>
             </div>
-            {!ready ? (
-              <div className="empty-state">
-                <ClipboardList />
-                <h2>
-                  {error
-                    ? 'Your workspace is unavailable'
-                    : 'Loading your workspace…'}
-                </h2>
-                <p>Use Refresh to try again.</p>
-              </div>
-            ) : visible.length ? (
-              <ul className="orders">
-                {visible.map((w) => (
-                  <li key={w.id} className="order">
-                    <div className={'priority-mark ' + w.priority} />
-                    <div className="order-main">
-                      <div className="order-meta">
-                        <span>{w.assetTag}</span>
-                        <span className={'badge ' + w.status}>
-                          {labels[w.status]}
-                        </span>
-                        <span className="priority-text">
-                          {w.priority} priority
-                        </span>
-                      </div>
-                      <h2>{w.title}</h2>
-                      <p>
-                        {w.serviceLocation} · {w.assignee || 'Unassigned'} ·{' '}
-                        {w.type}
-                      </p>
-                      {w.description && (
-                        <p className="order-description">{w.description}</p>
-                      )}
-                      {w.completionNote && (
-                        <p className="completion">
-                          <strong>Completion note:</strong> {w.completionNote}
-                        </p>
-                      )}
-                    </div>
-                    {w.status !== 'closed' && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setError('');
-                          setMode(w);
-                        }}
+          ) : route.id ? (
+            <RecordDetails
+              route={route}
+              data={data}
+              onAsset={openAsset}
+              onLocation={openLocation}
+              onWorkOrder={openWorkOrder}
+              onTransition={openTransition}
+            />
+          ) : tab === 'work-orders' ? (
+            <section aria-label="Work-order list">
+              {route.asset && (
+                <div className="context-bar">
+                  <span>
+                    Work orders for{' '}
+                    {selectedAsset ? (
+                      <a
+                        className="record-link"
+                        href={routeHref({
+                          section: 'assets',
+                          id: selectedAsset.id,
+                        })}
                       >
-                        {action[w.status]}
-                        <ArrowRight />
-                      </Button>
+                        {selectedAsset.tag} · {selectedAsset.name}
+                      </a>
+                    ) : (
+                      'an unavailable asset'
                     )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="empty-state">
-                <ClipboardList />
-                <h2>
-                  {data.workOrders.length
-                    ? 'No matching work orders'
-                    : 'A clear start for your maintenance team'}
-                </h2>
-                <p>
-                  {data.workOrders.length
-                    ? 'Try a different search or status.'
-                    : data.assets.length
-                      ? 'Create a work order to record what needs attention.'
-                      : locations.length
-                        ? 'Register your first asset, then create its first work order.'
-                        : 'Add your first location, then register the equipment there.'}
-                </p>
-                {!data.assets.length && (
-                  <Button
-                    onClick={() => {
-                      setError('');
-                      openAsset();
-                    }}
+                  </span>
+                  <a
+                    className="record-link"
+                    href={routeHref({ section: 'work-orders' })}
                   >
-                    <Plus />{' '}
-                    {locations.length
-                      ? 'Add your first asset'
-                      : 'Add your first location'}
-                  </Button>
-                )}
+                    Show all work orders
+                  </a>
+                </div>
+              )}
+              <div className="toolbar">
+                <Input
+                  aria-label="Search work orders"
+                  placeholder="Search title, asset, or assignee…"
+                  value={query}
+                  onChange={(event) =>
+                    navigate({ ...route, query: event.target.value }, true)
+                  }
+                />
+                <Select
+                  value={filter}
+                  onValueChange={(value) =>
+                    navigate(
+                      {
+                        ...route,
+                        status: String(value) as WorkspaceRoute['status'],
+                      },
+                      true,
+                    )
+                  }
+                  items={[
+                    { value: 'all', label: 'All statuses' },
+                    { value: 'open', label: 'Open work orders' },
+                    ...statuses.map((value) => ({
+                      value,
+                      label: labels[value],
+                    })),
+                  ]}
+                >
+                  <SelectTrigger aria-label="Filter by status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="open">Open work orders</SelectItem>
+                    {statuses.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {labels[status]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
-          </TabsContent>
-          <TabsContent value="assets">
-            <div className="toolbar">
-              <p className="muted">The equipment your team maintains.</p>
-              <Button
-                onClick={() => {
-                  setError('');
-                  openAsset();
-                }}
-                disabled={!ready}
-              >
-                <Plus /> {locations.length ? 'Add asset' : 'Add location'}
-              </Button>
-            </div>
-            {data.assets.length ? (
-              <ul className="asset-grid">
-                {data.assets.map((a) => (
-                  <li key={a.id}>
-                    <span className="asset-tag">
-                      <Box size={18} />
-                      {a.tag}
-                    </span>
-                    <h2>{a.name}</h2>
-                    <p>{a.location}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="empty-state">
-                <Box />
-                <h2>No assets registered yet</h2>
-                <p>Add an asset with its tag and service location.</p>
+              {visible.length ? (
+                <WorkOrderCards
+                  orders={visible}
+                  onTransition={openTransition}
+                />
+              ) : (
+                <div className="empty-state">
+                  <ClipboardList />
+                  <h2>
+                    {query || filter !== 'all' || route.asset
+                      ? 'No matching work orders'
+                      : 'A clear start for your maintenance team'}
+                  </h2>
+                  <p>
+                    {query || filter !== 'all'
+                      ? 'Try a different search or status.'
+                      : data.assets.length
+                        ? 'Create a work order to record what needs attention.'
+                        : locations.length
+                          ? 'Register your first asset, then create its first work order.'
+                          : 'Add your first location, then register the equipment there.'}
+                  </p>
+                  {(query || filter !== 'all') && (
+                    <a
+                      className="related-link"
+                      href={routeHref({
+                        section: 'work-orders',
+                        asset: route.asset,
+                      })}
+                    >
+                      Clear search and status
+                    </a>
+                  )}
+                  {data.assets.length ? (
+                    <Button
+                      disabled={unavailableAsset}
+                      onClick={() => openWorkOrder(selectedAsset?.id)}
+                    >
+                      <Plus />
+                      New work order
+                    </Button>
+                  ) : (
+                    <Button onClick={() => openAsset()}>
+                      <Plus />
+                      {locations.length
+                        ? 'Add your first asset'
+                        : 'Add your first location'}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </section>
+          ) : tab === 'assets' ? (
+            <section aria-label="Asset list">
+              {route.location && (
+                <div className="context-bar">
+                  <span>
+                    Equipment within{' '}
+                    {selectedLocation ? (
+                      <a
+                        className="record-link"
+                        href={routeHref({
+                          section: 'locations',
+                          id: selectedLocation.id,
+                        })}
+                      >
+                        {selectedLocation.path}
+                      </a>
+                    ) : (
+                      'an unavailable location'
+                    )}{' '}
+                    (including child locations)
+                  </span>
+                  <a
+                    className="record-link"
+                    href={routeHref({ section: 'assets' })}
+                  >
+                    Show all assets
+                  </a>
+                </div>
+              )}
+              <div className="toolbar">
+                <p className="muted">The equipment your team maintains.</p>
+                <Button
+                  disabled={Boolean(route.location && !selectedLocation)}
+                  onClick={() => openAsset(selectedLocation?.id)}
+                >
+                  <Plus />
+                  {locations.length ? 'Add asset' : 'Add location'}
+                </Button>
               </div>
-            )}
-          </TabsContent>
-          <TabsContent value="locations">
+              {visibleAssets.length ? (
+                <AssetCards
+                  assets={visibleAssets}
+                  workOrders={data.workOrders}
+                />
+              ) : (
+                <div className="empty-state">
+                  <Box />
+                  <h2>
+                    {route.location
+                      ? 'No assets within this location'
+                      : 'No assets registered yet'}
+                  </h2>
+                  <p>Add an asset with its tag and service location.</p>
+                </div>
+              )}
+            </section>
+          ) : (
             <LocationList
               locations={locations}
               assets={data.assets}
               ready={ready}
-              onAdd={openLocation}
+              onAdd={() => openLocation()}
             />
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
         <footer>
           <span>QueSuite CMMS · Pilot 0.2</span>
           <span>Online pilot · Changes require a connection</span>
@@ -492,7 +636,7 @@ export default function Home() {
                 : mode === 'work-order'
                   ? 'New work order'
                   : mode
-                    ? action[mode.status]
+                    ? orderActions[mode.status]
                     : ''}
           </DialogTitle>
           <DialogDescription>
@@ -510,6 +654,7 @@ export default function Home() {
                 kind={locationKind}
                 onKindChange={setLocationKind}
                 locations={locations}
+                parentId={formDefaults.parentId}
               />
             ) : mode === 'asset' ? (
               <>
@@ -536,6 +681,7 @@ export default function Home() {
                 <Choice
                   name="locationId"
                   title="Location"
+                  initial={formDefaults.locationId}
                   items={locations.map((location) => ({
                     value: location.id,
                     label: location.path,
@@ -557,6 +703,7 @@ export default function Home() {
                 <Choice
                   name="assetId"
                   title="Asset"
+                  initial={formDefaults.assetId}
                   items={data.assets.map((a) => ({
                     value: a.id,
                     label: a.tag + ' · ' + a.name,

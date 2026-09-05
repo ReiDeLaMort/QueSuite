@@ -1,5 +1,12 @@
 # Validation record
 
+Interlinked workspace update, September 5, 2026.
+
+- Lint, strict TypeScript, all 19 tests, and the production Worker build passed. The running local page returned HTTP 200 after the change.
+- Three navigation tests cover record/filter URL roundtrips (including reserved characters and the literal search term "all"), malformed links, missing IDs, and location ancestry/descendant scope.
+- A separate read-only review checked contextual form defaults, closed-record access, URL state, and historical location labels. The review found a search sentinel bug, which was fixed and covered by a regression case. Creation actions in unavailable asset/location contexts are disabled.
+- This increment changes client navigation and presentation only; the API and database schema are unchanged. Browser Back/Forward, reload/new-tab behavior, keyboard focus, responsive layouts, and physical-device interaction still need the manual walkthrough in PILOT.md. Automated URL tests do not substitute for that browser testing.
+
 Milestone 0.2, September 5, 2026.
 
 - Lint, strict TypeScript, all 16 repository tests, and the production Worker build passed.

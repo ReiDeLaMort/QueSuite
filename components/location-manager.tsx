@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Choice } from '@/components/form-choice';
 import type { Location, LocationKind, Asset } from '@/lib/domain';
+import { locationScope, routeHref } from '@/lib/navigation';
 
 export const locationLabels = {
   site: 'Site',
@@ -14,10 +15,12 @@ export function LocationFields({
   kind,
   onKindChange,
   locations,
+  parentId,
 }: {
   kind: LocationKind;
   onKindChange: (kind: LocationKind) => void;
   locations: Location[];
+  parentId?: string;
 }) {
   const parentKind = kind === 'building' ? 'site' : 'building';
   const parents = locations.filter((l) => l.kind === parentKind);
@@ -39,6 +42,11 @@ export function LocationFields({
             key={kind}
             name="parentId"
             title={kind === 'building' ? 'Site' : 'Building'}
+            initial={
+              parents.some((parent) => parent.id === parentId)
+                ? parentId
+                : undefined
+            }
             items={parents.map((l) => ({ value: l.id, label: l.path }))}
           />
         ) : (
@@ -97,8 +105,9 @@ export function LocationList({
         <ul className="location-list">
           {locations.map((location) => {
             const Icon = icons[location.kind];
+            const scope = locationScope(locations, location.id);
             const count = assets.filter(
-              (a) => a.locationId === location.id,
+              (asset) => asset.locationId && scope.has(asset.locationId),
             ).length;
             return (
               <li key={location.id} className={'location-row ' + location.kind}>
@@ -107,12 +116,25 @@ export function LocationList({
                   <span className="location-kind">
                     {locationLabels[location.kind]}
                   </span>
-                  <h2>{location.name}</h2>
+                  <h2>
+                    <a
+                      className="record-link"
+                      href={routeHref({
+                        section: 'locations',
+                        id: location.id,
+                      })}
+                    >
+                      {location.name}
+                    </a>
+                  </h2>
                   <p>{location.path}</p>
                 </div>
-                <span className="location-count">
-                  {count} {count === 1 ? 'asset' : 'assets'} here
-                </span>
+                <a
+                  className="location-count record-link"
+                  href={routeHref({ section: 'assets', location: location.id })}
+                >
+                  {count} {count === 1 ? 'asset' : 'assets'} within
+                </a>
               </li>
             );
           })}

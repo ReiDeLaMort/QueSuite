@@ -44,6 +44,8 @@ A mutation checks the organization and expected version, and refuses to run if t
 
 The browser retains the same request identifiers when retrying an unchanged open form after a network failure. It does not persist that draft across refreshes yet.
 
+Client navigation uses native fragment links (`#/assets/<id>`, `#/locations/<id>`, `#/work-orders/<id>`). List filters live in the fragment query string. A small `useSyncExternalStore` subscription tracks browser history; search/status changes replace the current list address, while record links create history entries. This keeps forms and the loaded snapshot in one workspace and adds no server routes, dependencies, or persistence changes. Missing IDs show a recoverable empty state. Location navigation follows IDs, includes descendants when labeled "within," and never infers relationships from legacy labels. Historical work-order service locations remain plain text; the asset is linked separately.
+
 Location and asset creation use their UUID as request identity. An exact normalized retry returns the saved record and timestamp; conflicting payloads return 409. The legacy asset API remains available with a free-text label. Structured creation accepts a location UUID and derives the label on the server.
 
 ## Known boundaries

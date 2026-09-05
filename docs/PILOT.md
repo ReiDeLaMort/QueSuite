@@ -11,6 +11,10 @@ Record date, observer, device, scenario, outcome, and friction. Do not enter sec
 - Assign it by technician name, start, complete with an outcome note, then review and close.
 - Refresh and confirm the record and completion note remain.
 - Search by asset or technician; filter statuses.
+- Click each dashboard count and confirm its list matches the count.
+- Follow a location to its child locations and equipment, then an asset to its work orders and a work order back to its asset. Check closed work-order details too.
+- Start a work order from an asset and confirm that asset is preselected. Add equipment or a child location from location details and check the parent selection.
+- Use browser Back to return to a filtered list, reload a detail URL, open a record link in another tab, and navigate links using the keyboard. A copied local URL references this computer's local database, not hosted data.
 - Have a technician and coordinator explain what each step means.
 
 ## Technical acceptance
