@@ -27,6 +27,7 @@ This project proves a maintenance workflow with the owner's team before expandin
 
 ## Collaboration
 
+- Canonical source: https://github.com/ReiDeLaMort/QueSuite. `origin` is GitHub; the original checkout retains `sites` for publishing. Do not confuse a GitHub push with an application deployment.
 - Human edits, Codex, and Claude use the same source and lockfile. Give each concurrent editor different files; review the diff before switching tools.
 - Do not add a new dependency or service without discussing its purpose with the owner. Existing pinned dependencies may be installed from the lockfile.
 - Run pnpm check and pnpm build before a handoff. Explain any check that was not run.

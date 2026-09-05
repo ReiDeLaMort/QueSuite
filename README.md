@@ -2,6 +2,9 @@
 
 A maintenance workspace for validating our team's workflow before building a product for multiple companies.
 
+Source repository: [ReiDeLaMort/QueSuite](https://github.com/ReiDeLaMort/QueSuite).
+Use this repository for work in Visual Studio, Codex, Claude, and other editors.
+
 **Milestone 0.1: online, owner-led pilot.** Register assets, create work orders, assign a technician by name, start work, record completion notes, and close reviewed work. Records persist in SQLite/D1. The API rejects stale versions and duplicate commands and records accepted work-order changes in an audit table.
 
 Individual accounts, roles, installation as a PWA, and offline synchronization are not implemented in this milestone. Assignee names are display labels, not authenticated identities. Hosted access remains private to the owner; this is a demonstration for the team, not a shared team deployment.
@@ -21,6 +24,8 @@ The launcher uses an installed pnpm, or this computer's bundled Codex Node/pnpm 
 For a standard development machine, install Node.js 24 LTS and pnpm 11.19.0, then:
 
 ```sh
+git clone https://github.com/ReiDeLaMort/QueSuite.git
+cd QueSuite
 pnpm install --frozen-lockfile
 pnpm db:migrate:local
 pnpm dev
@@ -52,6 +57,8 @@ Tests execute the real repository SQL against isolated in-memory SQLite. CI runs
 4. Let one editor own a given file at a time. Review the changes, run the checks, then commit.
 
 Visual Studio edits change these local files. They appear immediately in the running local development preview. Publishing to the private hosted app is a separate deployment step.
+
+On the original development computer, `origin` points to GitHub and `sites` points to the private deployment source repository. Use GitHub for everyday branches, pushes, and pull requests. A fresh GitHub clone needs only `origin` for local development; the Sites remote is used separately when publishing. GitHub Actions validates changes and does not deploy the app.
 
 ## Foundation
 
