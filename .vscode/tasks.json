@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CMMS: start",
+      "type": "shell",
+      "command": "./Start-CMMS.ps1",
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "CMMS: check",
+      "type": "shell",
+      "command": "./scripts/Invoke-Pnpm.ps1 check",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMMS: build",
+      "type": "shell",
+      "command": "./scripts/Invoke-Pnpm.ps1 build",
+      "problemMatcher": []
+    }
+  ]
+}
