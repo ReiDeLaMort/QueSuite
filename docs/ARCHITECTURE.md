@@ -42,6 +42,8 @@ Parts and Logistics are requested departments in the proposed model. Plan one co
 
 ## Transaction and retry contract
 
+The contribution model in [CONTRIBUTIONS.md](CONTRIBUTIONS.md) extends these guarantees to future source-backed record creation, versioned edits, reversals and duplicate consolidation. Preserve independent authorship/review identities and proposals; reverse through a new explained revision; use company-scoped canonical aliases for merged records while retaining historical event references and snapshots. Source evidence can support individual fields or relationships. Real asset instances, supplier offers and legitimate transactions remain distinct. These are design requirements; current APIs do not implement revision or merge commands.
+
 Work-order commands use a client UUID and operation ID. An exact accepted retry returns the original result before version checks. A different payload under the same operation ID returns 409 without changing records.
 
 A mutation checks the organization and expected version, and refuses to run if the operation was already accepted. In the same D1 batch, an audit/result entry is inserted only for the matching operation marker. A failed comparison cannot produce an event. Audit SQL failure rolls back the mutation.

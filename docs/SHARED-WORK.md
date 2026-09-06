@@ -34,18 +34,22 @@ Follow-up creates another linked maintenance action when needed. Routine QA task
 
 ## What each person can use
 
+The owner expects associates to be frequent first contributors, including creating building/location, asset/equipment, department and part records and recording their sources. Contribution should be available through explicit permissions and should preserve credit at every role level. [CONTRIBUTIONS.md](CONTRIBUTIONS.md) defines the proposed source, authorship, explained revision, reversal and duplicate-consolidation behavior. Basic contributions do not require blanket approval based only on seniority; review and privileged actions have their own permissions.
+
 Accounting is a peer department: it can originate a request, own tasks, request evidence from another department, and complete its own handoffs. It does not participate only as an approver. The same manager/supervisor/lead/associate perspectives apply within Accounting according to each person's responsibilities.
 
 These are proposed default views, not fixed permission grants or a mandatory approval chain.
 
-| Perspective            | Useful view                                                                  | Guidance alongside the work                                                 |
-| ---------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Manager                | Outcomes, overdue work, blockers, and handoffs across authorized departments | Why the work matters and which decisions need attention                     |
-| Supervisor             | Department queue, priorities, assignments, and authorized reviews            | Responsibilities, acceptance criteria, and escalation paths                 |
-| Lead                   | Work readiness, prerequisites, coordination, and support needs               | Relevant procedure revisions and handoff expectations                       |
-| Associate / technician | Assigned tasks, the context needed to perform them, and next steps           | Instructions, required readings, expected results, and when to ask for help |
+| Perspective            | Useful view                                                                                     | Guidance alongside the work                                                          |
+| ---------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Manager                | Outcomes, overdue work, blockers, and handoffs across authorized departments                    | Why the work matters and which decisions need attention                              |
+| Supervisor             | Department queue, priorities, assignments, and authorized reviews                               | Responsibilities, acceptance criteria, and escalation paths                          |
+| Lead                   | Work readiness, prerequisites, coordination, and support needs                                  | Relevant procedure revisions and handoff expectations                                |
+| Associate / technician | Assigned work, source-backed record creation and contributions, relevant context and next steps | Instructions, required readings, expected results, sources, and when to ask for help |
 
 Everyone should have the context required to do their work. A concise default view must not remove access that their responsibilities legitimately require. Job title, department membership, assigned responsibility, and permission to view/edit/approve are separate concepts. A person may participate in multiple departments. Reporting relationships must not automatically grant access to every underlying log or approval.
+
+Authorized owners/investors may also review or contribute within their granted scope. Preserve creator, contributor, source provider, reviewer and responsible owner as separate identities. Updating, reviewing or reversing a contribution does not transfer its authorship to the person making that later decision.
 
 ## Accounting in the proposed pilot
 

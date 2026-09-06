@@ -6,6 +6,8 @@ The product direction now includes collaboration between QA, Maintenance, Accoun
 
 Additional ideas for tracking operations are preserved in the [operations capability register](docs/OPERATIONS-REGISTER.md), with separate decision and delivery statuses so ideas remain visible without being mistaken for implemented features.
 
+The [contribution and record-history design](docs/CONTRIBUTIONS.md) captures associate-led record creation, information sources, contributor credit, explained edits/reversals, duplicate consolidation, and sourcing outcomes. These are planned foundations requiring authenticated identity and explicit revision workflows.
+
 Source repository: [ReiDeLaMort/QueSuite](https://github.com/ReiDeLaMort/QueSuite).
 Use this repository for work in Visual Studio, Codex, Claude, and other editors.
 

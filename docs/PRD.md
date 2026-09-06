@@ -10,6 +10,10 @@ Equipment issues and maintenance progress need one reliable place to be recorded
 
 The owner's expanded direction is to coordinate work that crosses department boundaries and help managers, supervisors, leads, and associates understand relevant progress, responsibilities, and instructions. Both operational/shift notes and meter-reading history are requested. CMMS workflows remain a core part of QueSuite. The proposed shared-request model and role-guidance approach are recorded in [SHARED-WORK.md](SHARED-WORK.md); they are not implemented features.
 
+## Contribution requirements
+
+Additional confirmed collaboration requirements: associates can be first creators and source providers for operational records; contributors retain credit and reasons for modifications; concurrent proposals and explained reversals preserve earlier intentions; duplicate identities can be consolidated with retained history and old-link resolution. Supplier offers, legitimate physical assets, purchases and resulting events keep their distinct identities. Proposed mechanics and implementation gates are in [CONTRIBUTIONS.md](CONTRIBUTIONS.md); these capabilities are not yet built.
+
 ## First complete workflow
 
 Create a site, building, and work area. Register an asset with a unique tag and select its location. Create a work order for it. Assign a technician by name. Start work. Record what was done in a completion note. Review and close the work order. Find the record again after a reload.
