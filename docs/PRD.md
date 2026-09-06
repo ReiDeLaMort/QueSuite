@@ -2,7 +2,7 @@
 
 Status: working CMMS milestone 0.2; shared-work direction captured September 5, 2026.
 Owner: Manuel / Que Enterprise.
-Audience: our maintenance team first, expanding to collaboration with QA and other departments; a product for multiple companies later.
+Audience: our maintenance team first, expanding to collaboration with QA, Accounting, and other departments; a product for multiple companies later.
 
 ## Problem
 
@@ -26,13 +26,13 @@ The owner operates this pilot during a team demonstration. Names are provisional
 
 Milestone 0.2 adds a three-level location hierarchy and asset location selection. Names are unique within each parent. Existing asset labels and historical work-order service locations remain intact. Location editing, movement, deletion, and conversion of legacy labels are outside this increment.
 
-The next proposed increment is manual asset meters and linked operational notes. A subsequent shared-request walkthrough will connect a QA task to Maintenance execution and explicit QA verification, with revisioned instructions. Preserve the distinction between completion of a department's work and acceptance of the overall outcome.
+The next proposed increment is manual asset meters and linked operational notes. A subsequent shared-request walkthrough will connect a QA task to Maintenance execution and explicit QA verification, with revisioned instructions. Accounting can originate requests, own department tasks, and participate in cost review or documentation handoffs when that workflow requires it. Preserve the distinction between completion of a department's work and acceptance of the overall outcome.
 
 Individual sign-in and company/department memberships; action permissions; offline cached work and a durable command outbox; explicit conflict review; recovery and device testing remain required. Job titles and default views do not confer permissions. Complete the access and recovery gates before granting independent team access or relying on disconnected field use.
 
 ## Not in v1
 
-Billing, subscription onboarding, purchasing, accounting/ERP integration, inventory valuation, automated PM generation, meter triggers, notifications, attachments, QR scanning, predictive maintenance, AI copilots, or physics simulation. Revisit each only after the core workflow is validated.
+Billing, subscription onboarding, purchase-order execution, bookkeeping/payment execution, accounting/ERP integration, inventory valuation, automated PM generation, meter triggers, notifications, attachments, QR scanning, predictive maintenance, AI copilots, or physics simulation. Revisit each only after the core workflow is validated.
 
 A general workflow designer, mandatory approval chain based on management rank, and a full training/certification platform are outside the proposed next increment. Start role learning with clear task purpose, instructions, expected outputs, and escalation guidance.
 

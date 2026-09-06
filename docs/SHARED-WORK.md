@@ -4,7 +4,7 @@ Status: product direction captured September 5, 2026. The workflow and implement
 
 ## Confirmed direction
 
-QueSuite remains a CMMS for maintenance work and will also coordinate related work across separate departments, beginning with QA and Maintenance. Support both operational/shift notes and meter-reading history. Managers, supervisors, leads, and associates should be able to understand relevant progress, their own responsibilities, how to perform the work, and how that work contributes to the company. Guidance must be able to evolve with the company's processes.
+QueSuite remains a CMMS for maintenance work and will also coordinate related work across separate departments, beginning with QA, Maintenance, and Accounting. Support both operational/shift notes and meter-reading history. Managers, supervisors, leads, and associates should be able to understand relevant progress, their own responsibilities, how to perform the work, and how that work contributes to the company. Guidance must be able to evolve with the company's processes.
 
 The current app provides assets, locations, work orders, linked detail views, completion notes, and system audit records. It does not yet provide department memberships, shared requests, manual meters, operational logbooks, PM generation, or role-specific access.
 
@@ -32,6 +32,8 @@ Follow-up creates another linked maintenance action when needed. Routine QA task
 
 ## What each person can use
 
+Accounting is a peer department: it can originate a request, own tasks, request evidence from another department, and complete its own handoffs. It does not participate only as an approver. The same manager/supervisor/lead/associate perspectives apply within Accounting according to each person's responsibilities.
+
 These are proposed default views, not fixed permission grants or a mandatory approval chain.
 
 | Perspective            | Useful view                                                                  | Guidance alongside the work                                                 |
@@ -43,11 +45,23 @@ These are proposed default views, not fixed permission grants or a mandatory app
 
 Everyone should have the context required to do their work. A concise default view must not remove access that their responsibilities legitimately require. Job title, department membership, assigned responsibility, and permission to view/edit/approve are separate concepts. A person may participate in multiple departments. Reporting relationships must not automatically grant access to every underlying log or approval.
 
+## Accounting in the proposed pilot
+
+Keep the first QA–Maintenance example and add one Accounting task when the chosen scenario needs it. Possible handoffs include a cost estimate review before a purchase commitment, a cost/documentation review after work, or a request from Accounting for Maintenance to verify an asset or explain a recurring repair expense. Purchasing execution and financial-system updates remain separate future scope.
+
+For example: QA reports inconsistent output; Maintenance identifies a replacement part; an authorized Accounting participant reviews the cost evidence if the request requires that decision; Maintenance performs the repair; QA verifies the result; Accounting receives the completion and cost references needed for its own follow-up. Tasks may run in parallel where no prerequisite is defined. There is no default requirement for Accounting to approve every repair or QA task.
+
+Show Maintenance execution, QA acceptance, and Accounting review as distinct task results. A record can show "repair completed / QA accepted / cost documentation pending" without misrepresenting any of those outcomes. The shared request's required tasks determine closure; payment status must not silently change work-order status or become a default closure requirement.
+
+The first Accounting task should capture only the evidence the agreed workflow needs, such as an estimate or actual amount with currency, a cost-category reference, and a document/reference identifier. Label submitted values as estimates or reported costs until reviewed. Record the authorized reviewer's decision and its scope separately from task completion. References to a purchase order or invoice do not imply that QueSuite created, posted, or paid it.
+
+Shared progress can expose the responsible department, next action, and review outcome while detailed financial evidence follows explicit access rules. Follow the same revisioned instructions and audit trail as other departments. Bookkeeping, tax handling, payments, and ERP synchronization are not part of this planned coordination increment.
+
 ## Small domain additions
 
 | Record                    | Purpose and links                                                                                                                                              |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Department and membership | Company-scoped QA/Maintenance membership, responsibilities, and action permissions                                                                             |
+| Department and membership | Company-scoped department membership including QA, Maintenance, and Accounting, responsibilities, and action permissions                                       |
 | Shared request            | Desired outcome, requester, accountable owner, participating departments, optional asset/location, acceptance criteria, and overall progress                   |
 | Department task           | One owning department, assigned person, expected result, instruction revision, and an explicit prerequisite or handoff; may reference a maintenance work order |
 | Instruction revision      | Purpose, steps, required evidence, expected outcome, escalation guidance, author/reviewer, and effective revision                                              |
@@ -72,7 +86,7 @@ PM plans can later specify a time or usage interval, required readings, and proc
 ## Baby-step implementation sequence
 
 1. Add manual asset meters and linked operational notes. Validate units, timestamps, corrections, retries, and links from asset/work-order details in the owner-led pilot.
-2. Prove the single shared-request → Maintenance → QA-verification example. Design its API contract and additive schema before code; preserve the existing maintenance lifecycle.
+2. Prove the single shared-request → Maintenance → QA-verification example, adding one Accounting-owned review or documentation task when applicable. Also allow Accounting to originate a request. Design its API contract and additive schema before code; preserve the existing maintenance lifecycle.
 3. Add a concise, revisioned instruction and role-guidance view for that example. Avoid a general workflow designer or a full learning-management platform.
 4. Implement authenticated company/department memberships and server-enforced permissions before separate people operate the departmental workflow. Validate permitted and denied cross-department actions as well as cross-company isolation.
 5. Extend the established offline plan to readings, logs, and handoffs, including correction and concurrent-edit cases. Test devices and recovery before field reliance.
@@ -83,3 +97,5 @@ Owner-led examples can be reviewed before steps 4–5; independent departmental 
 ## Evidence to collect in the walkthrough
 
 Can QA see that Maintenance owns the next action? Can a technician find the correct instruction and record the relevant measurement? Can QA see the evidence needed to verify the result? Can a supervisor identify a blocked handoff? Can an associate explain their expected output and who needs it next? Record friction and missing context before deciding what to build next.
+
+Can Accounting request missing evidence, identify which costs need review, and understand the completion handoff without exposing restricted financial details to everyone? Can the team distinguish a finished repair, accepted QA result, and outstanding Accounting task?
