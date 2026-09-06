@@ -1,12 +1,14 @@
 # Baby-step roadmap
 
 1. **Foundation 0.1 (complete):** PRD, domain boundaries, ADRs, OpenAPI contract, strict TypeScript, lint, repository tests, CI, persistent asset/work-order lifecycle.
-2. **Locations 0.2 (this delivery):** site → building → work area, asset location selection, same-company references, safe upgrade of existing records. Location editing and legacy conversion remain future work.
-3. **Identity:** managed sign-in, organization memberships, role enforcement, active references. Gate: cross-company and per-role tests pass before independent team access.
-4. **Offline proof:** installable app shell, IndexedDB cache/outbox, replay ordering, sync indicators, conflict review. Gate: airplane mode, app restart, lost response, revocation, and concurrent-edit tests pass on target devices.
-5. **Team field pilot:** limited equipment set, named users, observed maintenance cases, feedback log, backup/restore rehearsal. Gate: the team verifies workflow effectiveness and no lost changes.
-6. **Choose the next CMMS module:** procedures, PM scheduling, or parts based on actual feedback. Agree scope before schema and implementation.
-7. **Multiple-company product:** tenant onboarding, operational monitoring, support, migration/restore practices, performance and isolation review. Billing follows demonstrated demand.
+2. **Locations and linked navigation 0.2 (implemented):** site → building → work area, asset location selection, record details, scoped references, and safe upgrade of existing records. Browser/device walkthrough, location editing, and legacy conversion remain future work.
+3. **Manual meters and operational logs (proposed next):** both reading history and shift/maintenance notes, linked to assets and work orders. Validate units, provenance, corrections, and retries in the owner-led pilot. Automatic PM triggers remain later.
+4. **One departmental handoff (proposed):** a shared request with QA and Maintenance responsibilities, linked maintenance execution, explicit verification, and revisioned instructions/role guidance. Use [SHARED-WORK.md](SHARED-WORK.md) for the working example. Agree the example, API contract, and additive schema before implementation.
+5. **Identity and department access:** managed sign-in, company/department memberships, action permissions, and active references. Gate: cross-company, cross-department, and permitted/denied action tests pass before separate people operate the workflow. Job titles are not permission rules.
+6. **Offline proof:** installable app shell, IndexedDB cache/outbox, replay ordering, sync indicators, conflict review; extend the same rules to readings and notes. Gate: airplane mode, app restart, lost response, revocation, and concurrent-edit tests pass on target devices.
+7. **Team field pilot:** limited equipment set, named users, observed departmental handoffs, feedback log, backup/restore rehearsal. Gate: the team verifies workflow effectiveness and no lost changes.
+8. **One PM rule, then other modules:** connect a time/usage rule to the proven meter history and work-order flow; verify duplicate prevention and explicit acceptance. Select later CMMS modules from actual feedback.
+9. **Multiple-company product:** tenant onboarding, operational monitoring, support, migration/restore practices, performance and isolation review. Billing follows demonstrated demand.
 
 Current status: online owner-led prototype. Individual accounts, offline behavior, automatic scheduling, and production operations remain future work.
 

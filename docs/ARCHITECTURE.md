@@ -32,7 +32,9 @@ Assignment requires a name. Completion requires a nonblank result note. Skipping
 
 ## Planned entities
 
-Organization and membership (user/role/active state); procedures and checklist answers; PM schedule; meter/reading; part/stock transaction; attachment metadata.
+Organization and department memberships (user/responsibility/active state); shared request and department task; versioned instructions and acceptance records; operational log; meter/reading; PM schedule; procedures and checklist answers; part/stock transaction; attachment metadata.
+
+The owner has expanded the product direction to departmental collaboration and role guidance. [SHARED-WORK.md](SHARED-WORK.md) proposes the next bounded model. A shared request can be asset-optional and coordinates department-owned tasks. A linked maintenance task derives execution progress from the existing work order; requesting-department verification is a separate acceptance step. Keep the existing asset requirement and maintenance lifecycle intact. All new entities remain planned until a scoped API/schema increment is implemented.
 
 Locations must remain in the same company and cannot have cycles. An active assignee membership must belong to the work order's organization. Deactivate historical references instead of deleting them. Inventory and schedule models will be designed when those workflows enter scope.
 

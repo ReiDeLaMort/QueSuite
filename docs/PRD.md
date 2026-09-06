@@ -1,12 +1,14 @@
-# QueSuite CMMS — first pilot PRD
+# QueSuite — CMMS pilot and shared-work direction
 
-Status: structured locations milestone 0.2, September 5, 2026.
+Status: working CMMS milestone 0.2; shared-work direction captured September 5, 2026.
 Owner: Manuel / Que Enterprise.
-Audience: our maintenance team first; a product for multiple companies later.
+Audience: our maintenance team first, expanding to collaboration with QA and other departments; a product for multiple companies later.
 
 ## Problem
 
 Equipment issues and maintenance progress need one reliable place to be recorded and reviewed. Validate that technicians and coordinators can follow a work order without losing its context or updates.
+
+The owner's expanded direction is to coordinate work that crosses department boundaries and help managers, supervisors, leads, and associates understand relevant progress, responsibilities, and instructions. Both operational/shift notes and meter-reading history are requested. CMMS workflows remain a core part of QueSuite. The proposed shared-request model and role-guidance approach are recorded in [SHARED-WORK.md](SHARED-WORK.md); they are not implemented features.
 
 ## First complete workflow
 
@@ -24,11 +26,15 @@ The owner operates this pilot during a team demonstration. Names are provisional
 
 Milestone 0.2 adds a three-level location hierarchy and asset location selection. Names are unique within each parent. Existing asset labels and historical work-order service locations remain intact. Location editing, movement, deletion, and conversion of legacy labels are outside this increment.
 
-Individual sign-in and organization memberships; technician/coordinator permissions; offline cached work orders and a durable command outbox; explicit conflict review; recovery and device testing remain required. Complete these before relying on disconnected field use or granting independent team access.
+The next proposed increment is manual asset meters and linked operational notes. A subsequent shared-request walkthrough will connect a QA task to Maintenance execution and explicit QA verification, with revisioned instructions. Preserve the distinction between completion of a department's work and acceptance of the overall outcome.
+
+Individual sign-in and company/department memberships; action permissions; offline cached work and a durable command outbox; explicit conflict review; recovery and device testing remain required. Job titles and default views do not confer permissions. Complete the access and recovery gates before granting independent team access or relying on disconnected field use.
 
 ## Not in v1
 
 Billing, subscription onboarding, purchasing, accounting/ERP integration, inventory valuation, automated PM generation, meter triggers, notifications, attachments, QR scanning, predictive maintenance, AI copilots, or physics simulation. Revisit each only after the core workflow is validated.
+
+A general workflow designer, mandatory approval chain based on management rank, and a full training/certification platform are outside the proposed next increment. Start role learning with clear task purpose, instructions, expected outputs, and escalation guidance.
 
 ## Evidence of effectiveness
 

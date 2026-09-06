@@ -2,6 +2,8 @@
 
 A maintenance workspace for validating our team's workflow before building a product for multiple companies.
 
+The product direction now includes collaboration between QA, Maintenance, and other departments, with both operational logs and meter histories and guidance for each role. These are planned extensions; see [the shared-work blueprint](docs/SHARED-WORK.md) for the proposed pilot and implementation sequence.
+
 Source repository: [ReiDeLaMort/QueSuite](https://github.com/ReiDeLaMort/QueSuite).
 Use this repository for work in Visual Studio, Codex, Claude, and other editors.
 
