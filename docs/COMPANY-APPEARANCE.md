@@ -12,6 +12,8 @@ Direction confirmed by the owner September 5, 2026. The company website screensh
 
 Personal preferences override department defaults, then company defaults, then QueSuite defaults, only for settings that support those scopes. Shared identity remains company-controlled. A person can restore inherited defaults without resetting anyone else's layout. Device-specific density or navigation adapts to the available space rather than forcing desktop arrangements onto a phone.
 
+The owner also requested selectable English/Spanish and other supported languages on September 6, 2026. Language is a personal preference over shared records, with company defaults and explicit fallback. It does not duplicate work or alter its status, sources, units or permissions. Interface labels and original/translated record content have separate responsibilities; see [CAPTURE-LANGUAGES-AUTOMATION.md](CAPTURE-LANGUAGES-AUTOMATION.md).
+
 ## Three starting layouts
 
 - **Company Home:** a clean branded header, modest welcome area, familiar top navigation and linked work cards. The reference's green/white palette, whitespace and recognizable identity inform this option. A supplied workplace image can be an optional home treatment later.
