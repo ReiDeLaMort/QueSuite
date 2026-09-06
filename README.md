@@ -2,7 +2,7 @@
 
 A maintenance workspace for validating our team's workflow before building a product for multiple companies.
 
-The product direction now includes collaboration between QA, Maintenance, Accounting, and other departments, with both operational logs and meter histories and guidance for each role. These are planned extensions; see [the shared-work blueprint](docs/SHARED-WORK.md) for the proposed pilot and implementation sequence.
+The product direction now includes collaboration between QA, Maintenance, Accounting, Parts, Logistics, and other departments, with both operational logs and meter histories and guidance for each role. These are planned extensions; see [the shared-work blueprint](docs/SHARED-WORK.md) for the proposed pilot and implementation sequence.
 
 Additional ideas for tracking operations are preserved in the [operations capability register](docs/OPERATIONS-REGISTER.md), with separate decision and delivery statuses so ideas remain visible without being mistaken for implemented features.
 

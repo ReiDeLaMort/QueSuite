@@ -38,6 +38,8 @@ The owner has expanded the product direction to departmental collaboration and r
 
 Locations must remain in the same company and cannot have cycles. An active assignee membership must belong to the work order's organization. Deactivate historical references instead of deleting them. Inventory and schedule models will be designed when those workflows enter scope.
 
+Parts and Logistics are requested departments in the proposed model. Plan one company-scoped part catalog with explicit links for equipment suitability, installation/use, supported room/area, physical stock location, department responsibility, and work reservation/transactions. Organizational departments and physical locations are different targets. Logistics dispatch, receiving acknowledgment, QA acceptance, and consumption remain distinct events. Future supplier offers carry source, date, currency and purchasing unit; historical costs must not change when an offer changes. These are requirements for later schema/API design, not modifications to the current asset/location schema.
+
 ## Transaction and retry contract
 
 Work-order commands use a client UUID and operation ID. An exact accepted retry returns the original result before version checks. A different payload under the same operation ID returns 409 without changing records.

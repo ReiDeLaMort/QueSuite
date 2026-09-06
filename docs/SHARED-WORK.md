@@ -6,7 +6,7 @@ The owner also requested broader operations ideas be preserved for consideration
 
 ## Confirmed direction
 
-QueSuite remains a CMMS for maintenance work and will also coordinate related work across separate departments, beginning with QA, Maintenance, and Accounting. Support both operational/shift notes and meter-reading history. Managers, supervisors, leads, and associates should be able to understand relevant progress, their own responsibilities, how to perform the work, and how that work contributes to the company. Guidance must be able to evolve with the company's processes.
+QueSuite remains a CMMS for maintenance work and will also coordinate related work across separate departments, beginning with QA, Maintenance, Accounting, Parts, and Logistics. Support both operational/shift notes and meter-reading history. Managers, supervisors, leads, and associates should be able to understand relevant progress, their own responsibilities, how to perform the work, and how that work contributes to the company. Guidance must be able to evolve with the company's processes.
 
 The current app provides assets, locations, work orders, linked detail views, completion notes, and system audit records. It does not yet provide department memberships, shared requests, manual meters, operational logbooks, PM generation, or role-specific access.
 
@@ -59,11 +59,41 @@ The first Accounting task should capture only the evidence the agreed workflow n
 
 Shared progress can expose the responsible department, next action, and review outcome while detailed financial evidence follows explicit access rules. Follow the same revisioned instructions and audit trail as other departments. Bookkeeping, tax handling, payments, and ERP synchronization are not part of this planned coordination increment.
 
+## Parts and Logistics in the proposed model
+
+The owner explicitly added Parts and Logistics as participating departments, and requested parts associated with assets/equipment, rooms, areas, and departments. Both departments can originate requests, own tasks, manage handoffs, and use the same role guidance as other departments. Proposed responsibilities: Parts manages catalog/stock readiness and reservations; Logistics coordinates transfers, delivery, custody and receipt. Exact authority will follow the company's chosen workflow and permissions.
+
+Use one company-scoped part catalog and link it to the places and work it supports. A reusable item such as a filter should not need a separate catalog entry for each machine or department.
+
+| Relationship                   | What it means                                                                                                                     | Example                                                                     |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Fits / approved for            | The item is specified for an asset/equipment model or a particular asset; record the source/revision supporting that association  | Filter F-100 is specified for Pumps A and B                                 |
+| Installed / used               | A dated installation or consumption record links the item, quantity and relevant work; serial/lot details can follow where needed | One filter installed on Pump A under its work order                         |
+| Supports a room or area        | A location's relevant parts/consumables list, distinct from physical stock or an asset-specific specification                     | Lamps and filters used to maintain Utility Room 1                           |
+| Stocked at                     | Actual stock in a physical location/bin, with quantity, unit and condition                                                        | Six filters in the Maintenance storeroom, two in the QA room                |
+| Managed / used by a department | Organizational responsibility or usage; the same item can support several departments                                             | Parts manages replenishment while QA and Maintenance use the item           |
+| Reserved / issued / returned   | Material committed to or transacted against a request, task or work order                                                         | One filter reserved for Pump A, then issued or returned                     |
+| Transferred / delivered        | Origin, destination, dispatched quantity, custody, receiving acknowledgment and discrepancies                                     | Logistics moves the reserved filter to the line and records who received it |
+
+Rooms and areas are physical locations; departments are organizational records. The current location hierarchy is site → building → work area, so a room can be represented by a named work area in the current pilot. Any richer room/area taxonomy needs a later explicit model change. A part associated with a room is not automatically stocked there, and a department association does not add stock. Derive quantities from stock transactions. Compatibility, installation, reservation, delivery and use remain distinct facts. Item receipt may still require a separate QA check where that workflow calls for it.
+
+Proposed navigation: asset/equipment → relevant parts; room/area → supported parts and physical stock; department → managed/used parts; part → where used, where stocked, pending work and delivery history. Keep each relationship labeled so the user knows what a displayed quantity or link represents. A serialized component may also have an asset record; link that instance to its catalog item when needed.
+
+Example handoff: Maintenance requests a filter → Parts checks availability and reserves it → Logistics transfers it and confirms receipt → Maintenance records installation against the work order → QA verifies when required → Accounting receives the relevant reported-cost evidence. Each department's task result stays separate, and no department becomes a universal approval gate.
+
+### Later links, pricing and sourcing
+
+The owner proposed product links, price and sourcing for later consideration. Preserve these as supplier offers/reference records linked to the catalog item: manufacturer and supplier part numbers, product/specification URL, supplier, quote/source reference, price, currency, purchasing unit/pack quantity, effective/checked date, lead time and availability evidence. Multiple suppliers can offer one part. Any proposed substitute needs its own applicability/approval evidence.
+
+A current catalog offer must not overwrite historical quoted, approved or reported transaction costs. A saved product URL or quoted price does not establish current availability. Purchasing/payment execution and automatic price retrieval remain separate scope. First define the catalog and its relationships, then add stock/logistics transactions and later sourcing information as selected increments.
+
+These are planned requirements, not new app capabilities. The manual meters/logs increment remains next; use OPS-005 and OPS-006 in the [operations register](OPERATIONS-REGISTER.md) to retain the parts/logistics scope without duplicating catalog or task systems.
+
 ## Small domain additions
 
 | Record                    | Purpose and links                                                                                                                                              |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Department and membership | Company-scoped department membership including QA, Maintenance, and Accounting, responsibilities, and action permissions                                       |
+| Department and membership | Company-scoped department membership including QA, Maintenance, Accounting, Parts, and Logistics, responsibilities, and action permissions                     |
 | Shared request            | Desired outcome, requester, accountable owner, participating departments, optional asset/location, acceptance criteria, and overall progress                   |
 | Department task           | One owning department, assigned person, expected result, instruction revision, and an explicit prerequisite or handoff; may reference a maintenance work order |
 | Instruction revision      | Purpose, steps, required evidence, expected outcome, escalation guidance, author/reviewer, and effective revision                                              |

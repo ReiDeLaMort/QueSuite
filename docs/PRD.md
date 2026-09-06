@@ -2,7 +2,7 @@
 
 Status: working CMMS milestone 0.2; shared-work direction captured September 5, 2026.
 Owner: Manuel / Que Enterprise.
-Audience: our maintenance team first, expanding to collaboration with QA, Accounting, and other departments; a product for multiple companies later.
+Audience: our maintenance team first, expanding to collaboration with QA, Accounting, Parts, Logistics, and other departments; a product for multiple companies later.
 
 ## Problem
 
@@ -29,6 +29,8 @@ Milestone 0.2 adds a three-level location hierarchy and asset location selection
 The next proposed increment is manual asset meters and linked operational notes. A subsequent shared-request walkthrough will connect a QA task to Maintenance execution and explicit QA verification, with revisioned instructions. Accounting can originate requests, own department tasks, and participate in cost review or documentation handoffs when that workflow requires it. Preserve the distinction between completion of a department's work and acceptance of the overall outcome.
 
 Individual sign-in and company/department memberships; action permissions; offline cached work and a durable command outbox; explicit conflict review; recovery and device testing remain required. Job titles and default views do not confer permissions. Complete the access and recovery gates before granting independent team access or relying on disconnected field use.
+
+Parts and Logistics are also explicitly requested participants. Preserve a shared parts catalog linked to assets/equipment, rooms/work areas, and departments. Define suitability, actual installation/use, stocked location, department responsibility, and reservation/delivery as distinct relationships. Product links, dated prices/currency, and supplier sourcing are for later consideration. See the Parts and Logistics section in [SHARED-WORK.md](SHARED-WORK.md); these additions are not implemented and do not replace the next meters/logs increment.
 
 ## Not in v1
 
