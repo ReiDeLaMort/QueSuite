@@ -1,5 +1,7 @@
 # Baby-step roadmap
 
+Broader operational capabilities are preserved in [OPERATIONS-REGISTER.md](OPERATIONS-REGISTER.md). They start as Captured / Not scheduled. Use pilot evidence to select the next increment; keep deferred or declined ideas with a reason so they remain discoverable.
+
 1. **Foundation 0.1 (complete):** PRD, domain boundaries, ADRs, OpenAPI contract, strict TypeScript, lint, repository tests, CI, persistent asset/work-order lifecycle.
 2. **Locations and linked navigation 0.2 (implemented):** site → building → work area, asset location selection, record details, scoped references, and safe upgrade of existing records. Browser/device walkthrough, location editing, and legacy conversion remain future work.
 3. **Manual meters and operational logs (proposed next):** both reading history and shift/maintenance notes, linked to assets and work orders. Validate units, provenance, corrections, and retries in the owner-led pilot. Automatic PM triggers remain later.

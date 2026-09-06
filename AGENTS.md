@@ -15,6 +15,7 @@ This project proves a maintenance workflow with the owner's team before expandin
 ## Scope and correctness
 
 - Build one reviewed workflow at a time. Do not invent CMMS modules, AI features, billing, physics simulation, or ERP integrations.
+- Preserve future operations ideas in docs/OPERATIONS-REGISTER.md with stable IDs and separate decision/delivery status. Captured ideas are not implementation authorization. Keep deferred/declined ideas and their reasons; update the selected increment's contract and scope before feature work.
 - Keep company ownership on every business record and reference. The fixed pilot organization is not tenant authentication.
 - Do not call this pilot multi-user, offline-ready, or production-ready. Consult docs/ROADMAP.md for the gates.
 - Server rules own the work-order lifecycle. Never accept a client organization, actor, or role as authoritative.

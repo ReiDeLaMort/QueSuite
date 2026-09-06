@@ -32,6 +32,8 @@ Individual sign-in and company/department memberships; action permissions; offli
 
 ## Not in v1
 
+The owner requested a broad record of future possibilities. [OPERATIONS-REGISTER.md](OPERATIONS-REGISTER.md) preserves these ideas for discovery, including items outside this pilot. Capturing a possibility does not change the implemented scope or commit the team to building it.
+
 Billing, subscription onboarding, purchase-order execution, bookkeeping/payment execution, accounting/ERP integration, inventory valuation, automated PM generation, meter triggers, notifications, attachments, QR scanning, predictive maintenance, AI copilots, or physics simulation. Revisit each only after the core workflow is validated.
 
 A general workflow designer, mandatory approval chain based on management rank, and a full training/certification platform are outside the proposed next increment. Start role learning with clear task purpose, instructions, expected outputs, and escalation guidance.

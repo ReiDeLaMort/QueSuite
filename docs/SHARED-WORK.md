@@ -2,6 +2,8 @@
 
 Status: product direction captured September 5, 2026. The workflow and implementation sequence below are proposed. They are not implemented capabilities.
 
+The owner also requested broader operations ideas be preserved for consideration. [OPERATIONS-REGISTER.md](OPERATIONS-REGISTER.md) records those candidates with stable IDs and separate decision/delivery states. It extends this blueprint without changing the next planned increment or treating every captured idea as an approved feature.
+
 ## Confirmed direction
 
 QueSuite remains a CMMS for maintenance work and will also coordinate related work across separate departments, beginning with QA, Maintenance, and Accounting. Support both operational/shift notes and meter-reading history. Managers, supervisors, leads, and associates should be able to understand relevant progress, their own responsibilities, how to perform the work, and how that work contributes to the company. Guidance must be able to evolve with the company's processes.
